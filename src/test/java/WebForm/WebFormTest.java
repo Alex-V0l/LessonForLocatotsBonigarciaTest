@@ -1,15 +1,18 @@
 package WebForm;
 
 import org.junit.jupiter.api.*;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.Select;
+
+import java.io.File;
+import java.net.URL;
 
 
 
-public class LocatorsTest {
+
+public class WebFormTest {
 
     WebDriver driver;
     private static final String BASE_URL = "https://bonigarcia.dev/selenium-webdriver-java/web-form.html";
@@ -48,12 +51,12 @@ public class LocatorsTest {
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findTextInputFormTest() {
-        WebElement formTextUnder = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Text input']"));
+        WebElement TextformText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Text input']"));
         WebElement TextForm = driver.findElement(By.id("my-text-id"));
         TextForm.sendKeys("Test it");
         String expectedValue = TextForm.getDomProperty("value");
 
-        Assertions.assertEquals("Text input", formTextUnder.getText(), "Значения должны совпадать");
+        Assertions.assertEquals("Text input", TextformText.getText(), "Значения должны совпадать");
         Assertions.assertEquals("Test it", expectedValue, "Значения должны совпадать");
     }
 
@@ -61,12 +64,12 @@ public class LocatorsTest {
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findPasswordFormTest() {
-        WebElement formPasswordUnder = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Password']"));
+        WebElement formPasswordText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Password']"));
         WebElement TextForm = driver.findElement(By.name("my-password"));
         TextForm.sendKeys("1234f");
         String expectedValue = TextForm.getDomProperty("value");
 
-        Assertions.assertEquals("Password", formPasswordUnder.getText(), "Значения должны совпадать");
+        Assertions.assertEquals("Password", formPasswordText.getText(), "Значения должны совпадать");
         Assertions.assertEquals("1234f", expectedValue, "Значения должны совпадать");
     }
 
@@ -88,10 +91,11 @@ public class LocatorsTest {
     @Test
     void findDisabledInputFormTest() {
         WebElement formDisabledInputUnder = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Disabled input']"));
-        WebElement TextForm = driver.findElement(By.name("my-disabled"));
+        WebElement DisabledInput = driver.findElement(By.name("my-disabled"));
 
+        Assertions.assertFalse(DisabledInput.isEnabled());
         Assertions.assertEquals("Disabled input", formDisabledInputUnder.getText(), "Значения должны совпадать");
-        Assertions.assertThrows(org.openqa.selenium.ElementNotInteractableException.class, () -> TextForm.sendKeys("Test"));
+        Assertions.assertThrows(org.openqa.selenium.ElementNotInteractableException.class, () -> DisabledInput.sendKeys("Test"));
     }
 
     @DisplayName("Проверка формы ReadOnlyInput")
@@ -99,8 +103,8 @@ public class LocatorsTest {
     @Test
     void findReadOnlyInputFormTest() {
         WebElement formReadOnlyInputUnder = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Readonly input']"));
-        WebElement TextForm = driver.findElement(By.name("my-readonly"));
-        boolean isReadOnly = TextForm.getDomProperty("readOnly") != null;
+        WebElement ReadOnlyInput = driver.findElement(By.name("my-readonly"));
+        boolean isReadOnly = ReadOnlyInput.getDomProperty("readOnly") != null;
 
         Assertions.assertEquals("Readonly input", formReadOnlyInputUnder.getText(), "Значения должны совпадать");
         Assertions.assertTrue(isReadOnly, "Поле должно быть доступно только для чтения");
@@ -117,17 +121,19 @@ public class LocatorsTest {
         Assertions.assertEquals("https://bonigarcia.dev/selenium-webdriver-java/index.html", actualURL, "Значения должны совпадать");
     }
 
-    @DisplayName("Проверка ссылки на домашнюю страницу и Copyright")
+    @DisplayName("Проверка ссылки на страницу разработчика и Copyright")
     @Tags({@Tag("Smoke"), @Tag("UI")})
-    @Disabled//Так и не смог перейти по ссылке. Может быть скрыта футером?
     @Test
     void findBoniGarciaTest() {
         WebElement CopyrightText = driver.findElement(By.xpath("//span[@class='text-muted' and normalize-space(text())='Copyright © 2021-2025']"));
-        WebElement HomePageLink = driver.findElement(By.xpath("//span[@class='text-muted']/a[text()='Boni García']"));
-        HomePageLink.click();
+        Assertions.assertEquals("Copyright © 2021-2025 Boni García", CopyrightText.getText(), "Значения должны совпадать");
+
+        WebElement DevelopersPageLink = driver.findElement(By.xpath("//a[@href='https://bonigarcia.dev/']"));
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].click();", DevelopersPageLink);
+
         String actualLink = driver.getCurrentUrl();
 
-        Assertions.assertEquals("Copyright © 2021-2025", CopyrightText.getText(), "Значения должны совпадать");
         Assertions.assertEquals("https://bonigarcia.dev/", actualLink, "Значения должны совпадать");
     }
 
@@ -135,30 +141,50 @@ public class LocatorsTest {
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findDropDownSelectTest() {
-        WebElement DropDownText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Dropdown (select)']"));
-        String labelText = DropDownText.getAttribute("innerHTML").split("<select")[0].trim();
+        WebElement DropDownText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())= 'Dropdown (select)']"));
+        String labelText = DropDownText.getText().split("\n")[0].trim();
 
         WebElement DropDownMenu = driver.findElement(By.className("form-select"));
-        DropDownMenu.click();
+        Select select = new Select(DropDownMenu);
+        select.selectByValue("2");
 
-        WebElement selectedOption = driver.findElement(By.xpath("//option[@value='1']"));
-        selectedOption.click();
 
         Assertions.assertEquals("Dropdown (select)", labelText, "Значения должны совпадать");
-        Assertions.assertEquals("One", selectedOption.getText(), "Значения должны совпадать");
-    }//Через сохранение коллекции и поиск нужного элемента?
+        Assertions.assertEquals("Two", select.getFirstSelectedOption().getText(), "Значения должны совпадать");
+        Assertions.assertTrue(select.getFirstSelectedOption().isSelected(), "Должно быть выбрано значение \"Two\"");
+    }
 
     @DisplayName("Проверка Dropdown (datalist)")
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findDropDownDataListTest() {
-        WebElement DropDownTextUnder = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())= 'Dropdown (datalist)']"));
-        WebElement DropDownMenu = driver.findElement(By.name("my-datalist"));
-        DropDownMenu.sendKeys("New York");
-        String actualValue = DropDownMenu.getDomProperty("value");
+        WebElement DataListText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())= 'Dropdown (datalist)']"));
+        WebElement DataList = driver.findElement(By.name("my-datalist"));
 
-        Assertions.assertEquals("Dropdown (datalist)", DropDownTextUnder.getText(), "Значения должны совпадать");
-        Assertions.assertEquals("New York", actualValue, "Значения должны совпадать");
+        DataList.sendKeys("New York");
+        String actualPick = DataList.getDomProperty("value");
+
+        Assertions.assertEquals("Dropdown (datalist)", DataListText.getText(), "Значения должны совпадать");
+        Assertions.assertEquals("New York", actualPick, "Значения должны совпадать");
+    }
+
+    @Disabled//сложная попытка добавить еще проверку с выбором из всплывающего после клика поля
+    @Test
+    void findDropDownDataListTry() {
+        WebElement DataListText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())= 'Dropdown (datalist)']"));
+        Assertions.assertEquals("Dropdown (datalist)", DataListText.getText(), "Значения должны совпадать");
+
+        WebElement DataList = driver.findElement(By.name("my-datalist"));
+        DataList.click();
+        WebElement SeattleOption = driver.findElement(By.xpath("//option[@value='Seattle']"));
+        JavascriptExecutor js = (JavascriptExecutor)driver;
+        js.executeScript("arguments[0].click();", SeattleOption);
+        String selectedOption = DataList.getDomProperty("value");
+        Assertions.assertEquals("Seattle", selectedOption, "Значения должны совпадать");
+
+        DataList.sendKeys("New York");
+        String actualPick = DataList.getDomProperty("value");
+        Assertions.assertEquals("New York", actualPick, "Значения должны совпадать");
     }
 
     @DisplayName("Проверка Checked checkbox")
@@ -166,11 +192,15 @@ public class LocatorsTest {
     @Test
     void findCheckBoxTest() {
         WebElement CheckedCheckBoxText = driver.findElement(By.xpath("//label[@class='form-check-label w-100'][normalize-space(.)='Checked checkbox']"));
+        Assertions.assertEquals("Checked checkbox", CheckedCheckBoxText.getText(), "Значения должны совпадать");
+
         WebElement CheckedCheckBox = driver.findElement(By.id("my-check-1"));
         boolean isSelected = CheckedCheckBox.isSelected();
-
         Assertions.assertTrue(isSelected, "Checkbox must be checked");
-        Assertions.assertEquals("Checked checkbox", CheckedCheckBoxText.getText(), "Значения должны совпадать");
+
+        CheckedCheckBox.click();
+        boolean isNotSelected = CheckedCheckBox.isSelected();
+        Assertions.assertFalse(isNotSelected, "Checkbox must not be checked");
     }
 
     @DisplayName("Проверка Default checkbox")
@@ -178,11 +208,15 @@ public class LocatorsTest {
     @Test
     void findDefaultBoxTest() {
         WebElement CheckedCheckBoxText = driver.findElement(By.xpath("//label[@class='form-check-label w-100'][normalize-space(.)='Default checkbox']"));
-        WebElement DefaultCheckBox = driver.findElement(By.id("my-check-2"));
-        boolean isSelected = DefaultCheckBox.isSelected();
-
-        Assertions.assertFalse(isSelected, "Checkbox must not be checked");
         Assertions.assertEquals("Default checkbox", CheckedCheckBoxText.getText(), "Значения должны совпадать");
+
+        WebElement DefaultCheckBox = driver.findElement(By.id("my-check-2"));
+        boolean isNotSelected = DefaultCheckBox.isSelected();
+        Assertions.assertFalse(isNotSelected, "Checkbox must not be checked");
+
+        DefaultCheckBox.click();
+        boolean isSelected = DefaultCheckBox.isSelected();
+        Assertions.assertTrue(isSelected, "Checkbox must be checked");
     }
 
     @DisplayName("Проверка Checked Radio")
@@ -191,10 +225,11 @@ public class LocatorsTest {
     void findCheckedRadioTest() {
         WebElement CheckedRadioText = driver.findElement(By.xpath("//label[@class='form-check-label w-100'][normalize-space(.)='Checked radio']"));
         WebElement CheckedRadio = driver.findElement(By.id("my-radio-1"));
+
         boolean isSelected = CheckedRadio.isSelected();
 
-        Assertions.assertTrue(isSelected, "Checkbox must be checked");
         Assertions.assertEquals("Checked radio", CheckedRadioText.getText(), "Значения должны совпадать");
+        Assertions.assertTrue(isSelected, "Radio must not be checked");
     }
 
     @DisplayName("Проверка Default Radio")
@@ -205,7 +240,7 @@ public class LocatorsTest {
         WebElement DefaultRadio = driver.findElement(By.id("my-radio-2"));
         boolean isSelected = DefaultRadio.isSelected();
 
-        Assertions.assertFalse(isSelected, "Checkbox must not be checked");
+        Assertions.assertFalse(isSelected, "Radio must not be checked");
         Assertions.assertEquals("Default radio", DefaultRadioText.getText(), "Значения должны совпадать");
     }
 
@@ -214,42 +249,50 @@ public class LocatorsTest {
     @Test
     void findColorPickerTest() {
         WebElement ColorPickerText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Color picker']"));
-        WebElement ColorPickerMenu = driver.findElement(By.name("my-colors"));
-        ColorPickerMenu.click();
-
-        String colorValue = ColorPickerMenu.getDomProperty("value");
-
         Assertions.assertEquals("Color picker", ColorPickerText.getText(), "Значения должны совпадать");
-        Assertions.assertNotNull(colorValue, "Цвет не изменился");
+
+        WebElement ColorPickerMenu = driver.findElement(By.name("my-colors"));
+        String starterColor = ColorPickerMenu.getDomAttribute("value");
+        String blueColor = "#0000FF";
+        String script = "arguments[0].setAttribute('value', arguments[1]);" + "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));";
+
+        JavascriptExecutor js = (JavascriptExecutor)driver;
+        js.executeScript(script, ColorPickerMenu, blueColor);
+
+        String actulaColor = ColorPickerMenu.getDomAttribute("value");
+
+        Assertions.assertNotEquals(starterColor, actulaColor, "Значения не должны совпадать");
     }
 
     @DisplayName("Проверка Date Picker")
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findDatePickerTest() {
-        WebElement DatePickerText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text()[1])='Date picker']"));
+        WebElement DatePickerText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Date picker']"));
         WebElement DatePickerMenu = driver.findElement(By.name("my-date"));
         DatePickerMenu.click();
-        DatePickerMenu.sendKeys("2025-03-15");
+
+        WebElement certainDate = driver.findElement(By.xpath("//td[@class='old day' and contains(text(), '23')]"));
+        certainDate.click();
 
         String DatePickerValue = DatePickerMenu.getDomProperty("value");
 
         Assertions.assertEquals("Date picker", DatePickerText.getText(), "Значения должны совпадать");
-        Assertions.assertEquals("2025-03-15", DatePickerValue, "Значения должны совпадать");
+        Assertions.assertEquals("02/23/2025", DatePickerValue, "Значения должны совпадать");
     }
 
     @DisplayName("Проверка Example range")
     @Tags({@Tag("Smoke"), @Tag("UI")})
     @Test
     void findExampleRangeTest() {
-        WebElement ExampleRangeText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text()[1])='Example range']"));
-        WebElement DatePickerMenu = driver.findElement(By.name("my-range"));
-        DatePickerMenu.click();
-        String initialValue = DatePickerMenu.getDomProperty("value");
+        WebElement ExampleRangeText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='Example range']"));
+        WebElement ExampleRangeMenu = driver.findElement(By.name("my-range"));
+        ExampleRangeMenu.click();
+        String initialValue = ExampleRangeMenu.getDomProperty("value");
         Actions actions = new Actions(driver);
-        actions.clickAndHold(DatePickerMenu)
+        actions.clickAndHold(ExampleRangeMenu)
                 .moveByOffset(50, 0).release().perform();
-        String newValue = DatePickerMenu.getDomProperty("value");
+        String newValue = ExampleRangeMenu.getDomProperty("value");
 
         Assertions.assertEquals("Example range", ExampleRangeText.getText(), "Значения должны совпадать");
         Assertions.assertNotEquals(initialValue, newValue, "Значение ползунка не изменилось!");
@@ -269,11 +312,34 @@ public class LocatorsTest {
         String expectedURL = "https://bonigarcia.dev/selenium-webdriver-java/submitted-form.html?my-text=&my-password=&my-textarea=&my-readonly=Readonly+input&my-select=Open+this+select+menu&my-datalist=&my-file=&my-check=on&my-radio=on&my-colors=%23563d7c&my-date=&my-range=5&my-hidden=";
 
         Assertions.assertEquals(expectedURL, actualURL, "Значения должны совпадать");
+
+        WebElement FormSubmittedText = driver.findElement(By.xpath("//h1[@class='display-6']"));
+        String actualFormSubmittedText = FormSubmittedText.getText();
+
+        Assertions.assertEquals("Form submitted", actualFormSubmittedText, "Значения должны совпадать");
     }
 
+    @DisplayName("Проверка FileInput")
+    @Tags({@Tag("Smoke"), @Tag("UI")})
+    @Test
+    void findFileInputTest() throws InterruptedException {
+        WebElement FileInputText = driver.findElement(By.xpath("//label[@class='form-label w-100' and normalize-space(text())='File input']"));
+        Assertions.assertEquals("File input", FileInputText.getText(), "Значения должны совпадать");
 
+        URL url = WebFormTest.class.getClassLoader().getResource("try.txt");
+        String absolutePath = null;
+        if (url != null) {
+            absolutePath = new File(url.getPath()).getAbsolutePath();
 
-
+        } else {
+            throw new InterruptedException("Ресурс не найден");
+        }
+        WebElement fileUpload = driver.findElement(By.name("my-file"));
+        fileUpload.sendKeys(absolutePath);
+        driver.findElement(By.xpath("//button[text()='Submit']")).click();
+        Thread.sleep(3000);
+        Assertions.assertTrue(driver.getCurrentUrl().contains("try.txt"), "Файла нет в URL!");
+    }
 }
 
 
